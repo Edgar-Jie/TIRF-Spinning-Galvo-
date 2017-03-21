@@ -84,7 +84,7 @@ void readSerial(float *scalex, float *scaley, int *msdelay)  {
           return;
       }   
     }
-    else if (nextChar == 'x') {
+    else if (nextChar == 'x')
       Serial.println("Scaling in X");
       str = "";
       while (1==1){
@@ -123,6 +123,32 @@ void readSerial(float *scalex, float *scaley, int *msdelay)  {
         }
       }
     }
+    else if (nextChar == '^') {
+      Serial.println("Shifting centre Y");
+       str = "";
+      while (1==1){
+        store = Serial.read();
+        if (isDigit(store) or store == '.' or store =='-')
+           str += store;
+        else if (store == 'q')  {
+          *centreY = str.toInt();
+          return;
+        }
+      }
+    }
+    else if (nextChar == '>') {
+      Serial.println("Shifting centre X");
+       str = "";
+      while (1==1){
+        store = Serial.read();
+        if (isDigit(store) or store == '.' or store == '-')
+           str += store;
+        else if (store == 'q')  {
+          *centreX = str.toInt();
+          return;
+        }
+      }
+    }
     else{
     Serial.println(nextChar);
     return;
@@ -141,5 +167,5 @@ void readSerial(float *scalex, float *scaley, int *msdelay)  {
  *    Flipped pinouts for pinA and pinB because galvos are flipped upside down
  *    Laser is at centre position rather than top left when stopped
  *    Changed default scale to 1:1
- *    TODO: Add function to add shift centreX centreY from Serial Monitor
+ *    Add function to add shift centreX centreY from Serial Monitor
  */
