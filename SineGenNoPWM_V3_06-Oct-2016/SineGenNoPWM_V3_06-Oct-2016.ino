@@ -5,15 +5,15 @@
  * with delayMicroseconds set to zero is approx 1.68ms.
  * 
  * Author: Kandice Lau
- * Version 2
- * Date: 18-Aug-2016
+ * Version 4
+ * Date: 20-Mar-2017
  */
 #include <TimerOne.h>
 #define maxSamplesNum 100
 
 //Variables for code
-const byte pinA = 9;
-const byte pinB = 10;
+const byte pinA = 10;
+const byte pinB = 9;
 byte index = 0;
 
 //Array for iterating through the sine wave
@@ -30,8 +30,10 @@ static byte SineArray [maxSamplesNum] = {
       59,66,73,80,88,96,104,112,120,128};
 
 //Variable Pointers
-float scaleX = 4;
-float scaleY = 4;
+float scaleX = 1;
+float scaleY = 1;
+float centreX = 512;
+float centreY = 512;
 int msDelay = 0;
 
 void setup()  { 
@@ -45,14 +47,14 @@ void loop()  {
   for(int i=0; i<100; i++) 
   {
     //iterate to next loop
-    int Ytrans = (SineArray[i]-128)*scaleY + 512;
+    int Ytrans = (SineArray[i]-128)*scaleY + centreY;
     Timer1.setPwmDuty(pinA, Ytrans);
     if (i<75)
       index = i+24;  
     else
       index = i-74;
       
-    int Xtrans = (SineArray[index]-128)*scaleX + 512;
+    int Xtrans = (SineArray[index]-128)*scaleX + centreX;
     Timer1.setPwmDuty(pinB, Xtrans);
     
     //check for serial commands
@@ -71,6 +73,8 @@ void readSerial(float *scalex, float *scaley, int *msdelay)  {
   while (Serial.available()) {
     char nextChar = Serial.read();
     if (nextChar == 'c')  {
+      Timer1.setPwmDuty(pinA, centreY);
+      Timer1.setPwmDuty(pinB, centreX);
       Serial.println("Laser at Center, press q to quit");
    ;
       char quit = ' ';
@@ -131,6 +135,11 @@ void readSerial(float *scalex, float *scaley, int *msdelay)  {
  *  New, includes code to count time for 1000 cycles
  * V2 18-Aug-2015
  *  Serial Communication to control speed, xy scaling and centrepoint of Arduino
- * V3 -6-Oct-2016
+ * V3 6-Oct-2016
  *  Circles scale from a fixed centre point rather than from the top left corner.  
+ * V4 20-Mar-2017
+ *    Flipped pinouts for pinA and pinB because galvos are flipped upside down
+ *    Laser is at centre position rather than top left when stopped
+ *    Changed default scale to 1:1
+ *    TODO: Add function to add shift centreX centreY from Serial Monitor
  */
