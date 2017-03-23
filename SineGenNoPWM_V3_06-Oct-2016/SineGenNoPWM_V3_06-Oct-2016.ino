@@ -131,7 +131,7 @@ void readSerial(float *scalex, float *scaley, int *msdelay, int *centreX, int *c
         if (isDigit(store) or store == '.' or store =='-')
            str += store;
         else if (store == 'q')  {
-          *centreY = str.toFloat();
+          *centreY = *centreY + str.toInt();
           return;
         }
       }
@@ -144,7 +144,7 @@ void readSerial(float *scalex, float *scaley, int *msdelay, int *centreX, int *c
         if (isDigit(store) or store == '.' or store == '-')
            str += store;
         else if (store == 'q')  {
-          *centreX = str.toInt();
+          *centreX = *centreY + str.toInt();
           return;
         }
       }
