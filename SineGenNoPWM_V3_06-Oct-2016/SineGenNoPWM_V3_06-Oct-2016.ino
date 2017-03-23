@@ -32,8 +32,8 @@ static byte SineArray [maxSamplesNum] = {
 //Variable Pointers
 float scaleX = 1;
 float scaleY = 1;
-float centreX = 512;
-float centreY = 512;
+int centreX = 512;
+int centreY = 512;
 int msDelay = 0;
 
 void setup()  { 
@@ -59,13 +59,13 @@ void loop()  {
     
     //check for serial commands
     while(Serial.available())
-      readSerial(&scaleX, &scaleY, &msDelay);
+      readSerial(&scaleX, &scaleY, &msDelay, &centreX, &centreY);
     
      delayMicroseconds(msDelay);
   }
 }
 
-void readSerial(float *scalex, float *scaley, int *msdelay)  {
+void readSerial(float *scalex, float *scaley, int *msdelay, int *centreX, int *centreY)  {
   char store = 'n';
   String str = "";
   float num = 0;
@@ -73,8 +73,8 @@ void readSerial(float *scalex, float *scaley, int *msdelay)  {
   while (Serial.available()) {
     char nextChar = Serial.read();
     if (nextChar == 'c')  {
-      Timer1.setPwmDuty(pinA, centreY);
-      Timer1.setPwmDuty(pinB, centreX);
+      Timer1.setPwmDuty(pinA, *centreY);
+      Timer1.setPwmDuty(pinB, *centreX);
       Serial.println("Laser at Center, press q to quit");
    ;
       char quit = ' ';
@@ -84,7 +84,7 @@ void readSerial(float *scalex, float *scaley, int *msdelay)  {
           return;
       }   
     }
-    else if (nextChar == 'x')
+    else if (nextChar == 'x'){
       Serial.println("Scaling in X");
       str = "";
       while (1==1){
@@ -131,7 +131,7 @@ void readSerial(float *scalex, float *scaley, int *msdelay)  {
         if (isDigit(store) or store == '.' or store =='-')
            str += store;
         else if (store == 'q')  {
-          *centreY = str.toInt();
+          *centreY = str.toFloat();
           return;
         }
       }
