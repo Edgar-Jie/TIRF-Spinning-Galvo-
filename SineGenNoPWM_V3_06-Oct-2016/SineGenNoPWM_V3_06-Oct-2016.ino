@@ -5,8 +5,19 @@
  * with delayMicroseconds set to zero is approx 1.68ms.
  * 
  * Author: Kandice Lau
- * Version 4
- * Date: 20-Mar-2017
+ * Version 5
+ * Date: 28-Mar-2017
+ * 
+ * SERIAL MONITOR COMMANDS
+ * ** TYPE ONLY CONTENTS OF <> FOLLOWED BY RETURN KEY
+ * ** #int# #float# refers to number of specified type
+ * <p>  Normal Tirf mode, <q> to quit
+ * <c>  Centred mode, <q> to quit
+ * <s#int#q> Change the delay between loops, increasing will slow rotation. 0 by default
+ * <x#float#q> Changes scaling in x direction to #float#, default 1
+ * <y#float#q> Changes scaling in y direction to #float#, default 1
+ * <>#int#q> Increases shift in x direction by #int#
+ * <^#int#q> Increases shift in y direction by #int#
  */
 #include <TimerOne.h>
 #define maxSamplesNum 100
@@ -84,6 +95,19 @@ void readSerial(float *scalex, float *scaley, int *msdelay, int *centreX, int *c
           return;
       }   
     }
+        if (nextChar == 'p')  {
+      Timer1.setPwmDuty(pinA, *centreY);
+     //0.8 is a factor to tune sensitivity to speed changes
+      Timer1.setPwmDuty(pinB, (-128)*(*scalex*(0.8 + msDelay)/(1 + msDelay)) + *centreX);
+      Serial.println("Laser at normal TIRF, press q to quit");
+   ;
+      char quit = ' ';
+      while (1==1){
+        quit = Serial.read();
+        if (quit == 'q')
+          return;
+      }   
+    }
     else if (nextChar == 'x'){
       Serial.println("Scaling in X");
       str = "";
@@ -115,7 +139,7 @@ void readSerial(float *scalex, float *scaley, int *msdelay, int *centreX, int *c
        str = "";
       while (1==1){
         store = Serial.read();
-        if (isDigit(store) or store == '.')
+        if (isDigit(store))
            str += store;
         else if (store == 'q')  {
           *msdelay = str.toInt();
@@ -168,4 +192,7 @@ void readSerial(float *scalex, float *scaley, int *msdelay, int *centreX, int *c
  *    Laser is at centre position rather than top left when stopped
  *    Changed default scale to 1:1
  *    Add function to add shift centreX centreY from Serial Monitor
+ * V5 20-Mar-2017
+ *  Removed digit in speed input
+ *  Included functionality to change to normal TIRF
  */
