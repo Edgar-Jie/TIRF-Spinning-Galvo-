@@ -5,8 +5,8 @@
  * with delayMicroseconds set to zero is approx 1.68ms.
  * 
  * Author: Kandice Lau
- * Version 5
- * Date: 28-Mar-2017
+ * Version 6
+ * Date: 04-Apr-2017
  * 
  * SERIAL MONITOR COMMANDS
  * ** TYPE ONLY CONTENTS OF <> FOLLOWED BY RETURN KEY
@@ -60,20 +60,20 @@ void loop()  {
     //iterate to next loop
     int Ytrans = (SineArray[i]-128)*scaleY + centreY;
     Timer1.setPwmDuty(pinA, Ytrans);
-    if (i<75)
-      index = i+24;  
-    else
-      index = i-74;
+
+    index = i+25;  
+    if (index > 99){
+      index = index - 100;}
       
     int Xtrans = (SineArray[index]-128)*scaleX + centreX;
-    Timer1.setPwmDuty(pinB, Xtrans);
+    Timer1.setPwmDuty(pinB, Xtrans); 
+    delayMicroseconds(msDelay);
     
-    //check for serial commands
-    while(Serial.available())
-      readSerial(&scaleX, &scaleY, &msDelay, &centreX, &centreY);
-    
-     delayMicroseconds(msDelay);
   }
+//      check for serial commands
+  while(Serial.available()){
+      readSerial(&scaleX, &scaleY, &msDelay, &centreX, &centreY);
+    }
 }
 
 void readSerial(float *scalex, float *scaley, int *msdelay, int *centreX, int *centreY)  {
@@ -87,7 +87,7 @@ void readSerial(float *scalex, float *scaley, int *msdelay, int *centreX, int *c
       Timer1.setPwmDuty(pinA, *centreY);
       Timer1.setPwmDuty(pinB, *centreX);
       Serial.println("Laser at Center, press q to quit");
-   ;
+
       char quit = ' ';
       while (1==1){
         quit = Serial.read();
@@ -96,11 +96,11 @@ void readSerial(float *scalex, float *scaley, int *msdelay, int *centreX, int *c
       }   
     }
         if (nextChar == 'p')  {
-      Timer1.setPwmDuty(pinA, *centreY);
-     //0.8 is a factor to tune sensitivity to speed changes
-      Timer1.setPwmDuty(pinB, (-128)*(*scalex*(0.8 + msDelay)/(1 + msDelay)) + *centreX);
+      Timer1.setPwmDuty(pinA, (128-128)*(*scaley*(0.8 + msDelay)/(1 + msDelay)) + *centreY);
+      //0.8 is a factor to tune sensitivity to speed changes
+      Timer1.setPwmDuty(pinB, (255-128)*(*scalex*(0.8 + msDelay)/(1 + msDelay)) + *centreX);
       Serial.println("Laser at normal TIRF, press q to quit");
-   ;
+ 
       char quit = ' ';
       while (1==1){
         quit = Serial.read();
@@ -195,4 +195,6 @@ void readSerial(float *scalex, float *scaley, int *msdelay, int *centreX, int *c
  * V5 20-Mar-2017
  *  Removed digit in speed input
  *  Included functionality to change to normal TIRF
+ * V6 04-Apr-2017
+ *  Moved serial checking to once per circle vs. once per point to increase speed of spinning
  */
