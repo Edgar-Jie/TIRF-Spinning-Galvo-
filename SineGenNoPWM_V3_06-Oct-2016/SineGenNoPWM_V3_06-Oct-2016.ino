@@ -77,6 +77,7 @@ void loop()  {
 }
 
 void readSerial(float *scalex, float *scaley, int *msdelay, int *centreX, int *centreY)  {
+// This functions defines what to do in the event that a serial command is sent
   char store = 'n';
   String str = "";
   float num = 0;
@@ -84,6 +85,7 @@ void readSerial(float *scalex, float *scaley, int *msdelay, int *centreX, int *c
   while (Serial.available()) {
     char nextChar = Serial.read();
     if (nextChar == 'c')  {
+          //When 'c' is entered, the laser moves to centre position until 'q' is sent
       Timer1.setPwmDuty(pinA, *centreY);
       Timer1.setPwmDuty(pinB, *centreX);
       Serial.println("Laser at Center, press q to quit");
@@ -95,7 +97,10 @@ void readSerial(float *scalex, float *scaley, int *msdelay, int *centreX, int *c
           return;
       }   
     }
-        if (nextChar == 'p')  {
+    else  if (nextChar == 'p')  {
+          //When 'p' is entered, the laser moves to the side position until 'q' is sent
+          //This command is unreliable as the radius of the circle is smaller than expected
+          //at smaller speeds
       Timer1.setPwmDuty(pinA, (128-128)*(*scaley*(0.8 + msDelay)/(1 + msDelay)) + *centreY);
       //0.8 is a factor to tune sensitivity to speed changes
       Timer1.setPwmDuty(pinB, (255-128)*(*scalex*(0.8 + msDelay)/(1 + msDelay)) + *centreX);
@@ -109,6 +114,7 @@ void readSerial(float *scalex, float *scaley, int *msdelay, int *centreX, int *c
       }   
     }
     else if (nextChar == 'x'){
+      //When x is sent, the value stored at *scalex is updated
       Serial.println("Scaling in X");
       str = "";
       while (1==1){
@@ -122,6 +128,7 @@ void readSerial(float *scalex, float *scaley, int *msdelay, int *centreX, int *c
       }
     }
     else if (nextChar == 'y') {
+      //When y is sent, the value stored at *scaley is updated
       Serial.println("Scaling in y");
       str = "";
       while (1==1){
@@ -135,6 +142,7 @@ void readSerial(float *scalex, float *scaley, int *msdelay, int *centreX, int *c
       }
     }
     else if (nextChar == 's') {
+      //When s is sent, the value stored at *msdelay is updated
       Serial.println("Changing ms delay");
        str = "";
       while (1==1){
@@ -148,6 +156,8 @@ void readSerial(float *scalex, float *scaley, int *msdelay, int *centreX, int *c
       }
     }
     else if (nextChar == '^') {
+      //When ^ is sent, centre position is moved up many steps
+      //Negative values are allowed to shift it down
       Serial.println("Shifting centre Y");
        str = "";
       while (1==1){
@@ -161,6 +171,8 @@ void readSerial(float *scalex, float *scaley, int *msdelay, int *centreX, int *c
       }
     }
     else if (nextChar == '>') {
+       //When > is sent, centre position is moved right by that many steps
+       //Negative values are allowed to shift it left
       Serial.println("Shifting centre X");
        str = "";
       while (1==1){
