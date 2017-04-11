@@ -1,12 +1,15 @@
-/*____________SineGenNoPWM__________________________________
+/*____________SineGenNoPWM - Speed Edit__________________________________
+ * Updated archetecture to increase the speed of scanning. It turns out that certain functions
+ * (addition) greatly increase the time it takes to scan the lasers. Archetecture updated to 
+ * optimize for speed
  * 
  *  Arduino software for Spinning laser for TIRF systems. Arduino program controls galvos
  * using TimerONE library for a faster PWN than the native Arduino PWM. Speed of one cycle
  * with delayMicroseconds set to zero is approx 1.68ms.
  * 
  * Author: Kandice Lau
- * Version 6
- * Date: 04-Apr-2017
+ * Version 6-SE
+ * Date: 10-Apr-2017
  * 
  * SERIAL MONITOR COMMANDS
  * ** TYPE ONLY CONTENTS OF <> FOLLOWED BY RETURN KEY
@@ -40,44 +43,95 @@ static byte SineArray [maxSamplesNum] = {
       8,12,15,19,24,29,34,40,46,52,
       59,66,73,80,88,96,104,112,120,128};
 
+int XArray [maxSamplesNum] = {
+      128,136,144,152,160,168,176,183,190,197,
+      204,210,216,222,227,232,237,241,244,248,
+      250,252,254,255,255,255,255,255,253,251,
+      249,246,243,239,235,230,225,219,213,207,
+      201,194,187,179,172,164,156,148,140,132,
+      124,116,108,100,92,84,77,69,62,55,
+      49,43,37,31,26,21,17,13,10,7,
+      5,3,1,0,0,0,1,2,4,6,
+      8,12,15,19,24,29,34,40,46,52,
+      59,66,73,80,88,96,104,112,120,128};
+
+int YArray [maxSamplesNum] = {
+      128,136,144,152,160,168,176,183,190,197,
+      204,210,216,222,227,232,237,241,244,248,
+      250,252,254,255,255,255,255,255,253,251,
+      249,246,243,239,235,230,225,219,213,207,
+      201,194,187,179,172,164,156,148,140,132,
+      124,116,108,100,92,84,77,69,62,55,
+      49,43,37,31,26,21,17,13,10,7,
+      5,3,1,0,0,0,1,2,4,6,
+      8,12,15,19,24,29,34,40,46,52,
+      59,66,73,80,88,96,104,112,120,128};
+
 //Variable Pointers
-float scaleX = 1;
-float scaleY = 1;
+float scaleX = 3;
+float scaleY = 3;
 int centreX = 512;
 int centreY = 512;
 int msDelay = 0;
+int elipsis = 28; //default 25 This will change the elipticity of your circle
+int counter = 0;
 
 void setup()  { 
   Timer1.initialize(32);
   Timer1.pwm(pinA, 0);
   Timer1.pwm(pinB, 0);
   Serial.begin(9600);
+
+  updateloop();
+
+  // Uncomment following section to check the values of the X and Y arrays
+/*
+  for (int i=0; i<maxSamplesNum; i++){
+  Serial.println(XArray[i]);
+  }
+  for (int i=0; i<maxSamplesNum; i++){
+  Serial.println(XArray[i]);
+  } 
+*/
 }
   
 void loop()  {
-  for(int i=0; i<100; i++) 
+  for(int i=0; i<maxSamplesNum; i++) 
   {
     //iterate to next loop
-    int Ytrans = (SineArray[i]-128)*scaleY + centreY;
-    Timer1.setPwmDuty(pinA, Ytrans);
-
-    index = i+25;  
-    if (index > 99){
-      index = index - 100;}
-      
-    int Xtrans = (SineArray[index]-128)*scaleX + centreX;
-    Timer1.setPwmDuty(pinB, Xtrans); 
-    delayMicroseconds(msDelay);
+    Timer1.setPwmDuty(pinA, YArray[i]);
+    Timer1.setPwmDuty(pinB, XArray[i]); 
     
-  }
-//      check for serial commands
-  while(Serial.available()){
-      readSerial(&scaleX, &scaleY, &msDelay, &centreX, &centreY);
+    delayMicroseconds(msDelay);
+        //      check for serial commands
+    }
+
+//Uncomment following section to print system time per 1000 cycles in us
+//Uncommenting this WILL pause your code slightly while printing
+/*
+   counter = counter + 1;
+    if (counter>999){
+      Serial.println(micros());
+      counter = 0;
+    }
+*/
+    while(Serial.available()){
+        readSerial(&scaleX, &scaleY, &msDelay, &centreX, &centreY);
     }
 }
 
+void updateloop(){
+  //Function reads stored scale and centre values and updates the arrays for X and Y
+  for (int i=0; i<maxSamplesNum; i++){
+  YArray[i] = (SineArray[i]-128)*scaleY + centreY;
+  index = i + elipsis;  
+    if (index > 99){
+      index = index - 100;}
+  XArray[i] = (SineArray[index]-128)*scaleX + centreX;
+  } 
+}
+  
 void readSerial(float *scalex, float *scaley, int *msdelay, int *centreX, int *centreY)  {
-// This functions defines what to do in the event that a serial command is sent
   char store = 'n';
   String str = "";
   float num = 0;
@@ -85,7 +139,6 @@ void readSerial(float *scalex, float *scaley, int *msdelay, int *centreX, int *c
   while (Serial.available()) {
     char nextChar = Serial.read();
     if (nextChar == 'c')  {
-          //When 'c' is entered, the laser moves to centre position until 'q' is sent
       Timer1.setPwmDuty(pinA, *centreY);
       Timer1.setPwmDuty(pinB, *centreX);
       Serial.println("Laser at Center, press q to quit");
@@ -97,10 +150,7 @@ void readSerial(float *scalex, float *scaley, int *msdelay, int *centreX, int *c
           return;
       }   
     }
-    else  if (nextChar == 'p')  {
-          //When 'p' is entered, the laser moves to the side position until 'q' is sent
-          //This command is unreliable as the radius of the circle is smaller than expected
-          //at smaller speeds
+        if (nextChar == 'p')  {
       Timer1.setPwmDuty(pinA, (128-128)*(*scaley*(0.8 + msDelay)/(1 + msDelay)) + *centreY);
       //0.8 is a factor to tune sensitivity to speed changes
       Timer1.setPwmDuty(pinB, (255-128)*(*scalex*(0.8 + msDelay)/(1 + msDelay)) + *centreX);
@@ -114,7 +164,6 @@ void readSerial(float *scalex, float *scaley, int *msdelay, int *centreX, int *c
       }   
     }
     else if (nextChar == 'x'){
-      //When x is sent, the value stored at *scalex is updated
       Serial.println("Scaling in X");
       str = "";
       while (1==1){
@@ -123,12 +172,12 @@ void readSerial(float *scalex, float *scaley, int *msdelay, int *centreX, int *c
            str += store;
         else if (store == 'q')  {
           *scalex = str.toFloat();
-          return;
+           updateloop();
+           return;
         }
       }
     }
     else if (nextChar == 'y') {
-      //When y is sent, the value stored at *scaley is updated
       Serial.println("Scaling in y");
       str = "";
       while (1==1){
@@ -137,12 +186,12 @@ void readSerial(float *scalex, float *scaley, int *msdelay, int *centreX, int *c
            str += store;
         else if (store == 'q')  {
           *scaley = str.toFloat();
+          updateloop();
           return;
         }
       }
     }
     else if (nextChar == 's') {
-      //When s is sent, the value stored at *msdelay is updated
       Serial.println("Changing ms delay");
        str = "";
       while (1==1){
@@ -156,8 +205,6 @@ void readSerial(float *scalex, float *scaley, int *msdelay, int *centreX, int *c
       }
     }
     else if (nextChar == '^') {
-      //When ^ is sent, centre position is moved up many steps
-      //Negative values are allowed to shift it down
       Serial.println("Shifting centre Y");
        str = "";
       while (1==1){
@@ -166,13 +213,12 @@ void readSerial(float *scalex, float *scaley, int *msdelay, int *centreX, int *c
            str += store;
         else if (store == 'q')  {
           *centreY = *centreY + str.toInt();
+          updateloop();
           return;
         }
       }
     }
     else if (nextChar == '>') {
-       //When > is sent, centre position is moved right by that many steps
-       //Negative values are allowed to shift it left
       Serial.println("Shifting centre X");
        str = "";
       while (1==1){
@@ -181,6 +227,7 @@ void readSerial(float *scalex, float *scaley, int *msdelay, int *centreX, int *c
            str += store;
         else if (store == 'q')  {
           *centreX = *centreY + str.toInt();
+          updateloop();
           return;
         }
       }
@@ -191,7 +238,6 @@ void readSerial(float *scalex, float *scaley, int *msdelay, int *centreX, int *c
     }
   }
 }
-
 /*Revision Log
  * V1 17-Aug-2015
  *  New, includes code to count time for 1000 cycles
@@ -209,4 +255,7 @@ void readSerial(float *scalex, float *scaley, int *msdelay, int *centreX, int *c
  *  Included functionality to change to normal TIRF
  * V6 04-Apr-2017
  *  Moved serial checking to once per circle vs. once per point to increase speed of spinning
+ * V6 Speed Edit
+ *  Updated entire archetecture. ReadSerial now updates arrays XArray and YArray, scan speed of 
+ *  code is greatly increased. From 7.61ms in V6 to 1.469ms in V6 Speed Edit
  */
